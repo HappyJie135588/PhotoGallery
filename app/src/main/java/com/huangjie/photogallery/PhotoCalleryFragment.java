@@ -90,7 +90,12 @@ public class PhotoCalleryFragment extends Fragment {
 
         @Override
         protected List<GalleryItem> doInBackground(Void... voids) {
-            return new FlickrFetchr().fetchItems();
+            String query = "sex";//Just for testing
+            if(query == null){
+                return new FlickrFetchr().fetchRecentPhotos();
+            }else{
+                return new FlickrFetchr().searchPhotos(query);
+            }
         }
 
         @Override
