@@ -1,5 +1,6 @@
 package com.huangjie.photogallery;
 
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.Notification;
@@ -21,7 +22,12 @@ import java.util.List;
 public class PollService extends IntentService {
     private static final String TAG = "PollService";
 
-    private static final int POLL_INTERVAL = 1000 * 60;//60seconds
+    private static final long POLL_INTERVAL = AlarmManager.INTERVAL_FIFTEEN_MINUTES;//60seconds
+
+    public static final String ACTION_SHOW_NOTIFICATION = "com.huangjie.photogallery.SHOW_NOTIFICATION";
+    public static final String PERM_PRIVATE = "com.huangjie.photogallery.PRIVATE";
+    public static final String REQUST_CODE = "REQUEST_CODE";
+    public static final String NOTIFICATION = "NOTIFICATION";
 
     public static Intent newIntent(Context context) {
         return new Intent(context, PollService.class);
@@ -39,12 +45,13 @@ public class PollService extends IntentService {
             alarmManager.cancel(pi);
             pi.cancel();
         }
+        QueryPreferences.setPrefIsAlarmOn(context, isOn);
     }
 
-    public static boolean isServiceAlarmOn(Context context){
+    public static boolean isServiceAlarmOn(Context context) {
         Intent i = PollService.newIntent(context);
-        PendingIntent pi = PendingIntent.getService(context,0,i,PendingIntent.FLAG_IMMUTABLE);
-        return pi !=null;
+        PendingIntent pi = PendingIntent.getService(context, 0, i, PendingIntent.FLAG_IMMUTABLE);
+        return pi != null;
     }
 
     public PollService() {
@@ -76,7 +83,7 @@ public class PollService extends IntentService {
             Log.i(TAG, "Got a new result: " + resultId);
             Resources resources = getResources();
             Intent i = PhotoCalleryActivity.newIntent(this);
-            PendingIntent pi = PendingIntent.getActivity(this,0,i,0);
+            PendingIntent pi = PendingIntent.getActivity(this, 0, i, 0);
             Notification notification = new NotificationCompat.Builder(this)
                     .setTicker(resources.getString(R.string.new_pictures_title))
                     .setSmallIcon(android.R.drawable.ic_menu_report_image)
@@ -85,10 +92,16 @@ public class PollService extends IntentService {
                     .setContentIntent(pi)
                     .setAutoCancel(true)
                     .build();
-            NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
-            notificationManagerCompat.notify(0,notification);
+            showBackgroundNotification(0,notification);
         }
         QueryPreferences.setLastResultId(this, resultId);
+    }
+
+    private void showBackgroundNotification(int requestCode, Notification notification) {
+        Intent i = new Intent(ACTION_SHOW_NOTIFICATION);
+        i.putExtra(REQUST_CODE,requestCode);
+        i.putExtra(NOTIFICATION,notification);
+        sendOrderedBroadcast(i,PERM_PRIVATE,null,null, Activity.RESULT_OK,null,null);
     }
 
     private boolean isNetworkAvailableAndConnected() {
